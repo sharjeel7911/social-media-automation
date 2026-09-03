@@ -1,0 +1,60 @@
+```gitignore
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+out/
+
+# Electron packaged apps
+release/
+*.exe
+*.msi
+*.dmg
+*.app
+*.deb
+*.rpm
+*.AppImage
+
+# Vite
+.vite/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE / Editors
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+.temp/
+
+# Coverage
+coverage/
+
+# TypeScript
+*.tsbuildinfo
+```

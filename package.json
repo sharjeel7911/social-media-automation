@@ -1,0 +1,39 @@
+{
+  "name": "social-media-automation",
+  "version": "1.0.0",
+  "description": "Social Media Marketing Automation Platform - Module C",
+  "main": "dist-electron/electron/main.js",
+  "type": "module",
+  "scripts": {
+    "dev:renderer": "vite",
+    "build:electron": "tsc -p tsconfig.node.json",
+    "dev": "concurrently -k \"npm run dev:renderer\" \"npm run build:electron -- --watch\" \"electron .\"",
+    "build": "tsc && vite build && npm run build:electron",
+    "rebuild": "electron-rebuild -f -w better-sqlite3",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.20.0",
+    "better-sqlite3": "^13.0.3",
+    "dotenv": "^17.4.2",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^3.6.0",
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-react": "^6.1.1",
+    "concurrently": "^10.0.5",
+    "electron": "^44.1.1",
+    "electron-builder": "^26.15.3",
+    "typescript": "^5.9.3",
+    "vite": "^8.2.2"
+  }
+}
