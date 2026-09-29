@@ -1,15 +1,28 @@
 <!doctype html>
-<html>
+<!-- This file is the very first thing that loads when the app opens.
+     Think of it as an empty picture frame — it doesn't have any of our
+     actual app content in it, just one empty box (below) that React
+     will fill up with everything you actually see on screen. -->
+<html lang="en">
 
 <head>
     <meta charset="UTF-8" />
+    <!-- Tells the browser/window to read the text using standard characters
+         (so letters, accents, symbols etc. all display correctly). -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Electron App</title>
+    <!-- Makes sure the app sizes itself sensibly on different screen sizes. -->
+    <title>Signal Desk</title>
+    <!-- The title of the app window / browser tab. -->
 </head>
 
 <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <!-- This is the empty box mentioned above. It starts completely empty.
+         Our React code finds this exact box (by its id, "root") and
+         inserts the whole Signal Desk app inside it. -->
+    <script type="module" src="/src/main.tsx"></script>
+    <!-- This line loads our actual app code and runs it. "main.tsx" is
+         the starting point of everything — it's the first file that runs. -->
 </body>
 
 </html>

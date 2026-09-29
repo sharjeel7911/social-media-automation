@@ -1,8 +1,283 @@
-* {
-    box-sizing: border-box;
+/* ============================================================================
+   WHAT IS THIS FILE?
+   This is the stylesheet — it controls colors, spacing, fonts, and layout
+   for the whole app. None of the actual text or buttons are created here;
+   this file only decides how things that already exist (from the .tsx
+   files) should LOOK.
+   ============================================================================ */
+
+:root {
+  /* ":root" means "these apply to the whole page." Everything below is a
+     reusable named color/value (called a "CSS variable") so we only have
+     to update a color in ONE place if we ever want to change our theme. */
+  --bg: #EDEEE6;              /* the app's overall background color (soft parchment) */
+  --surface: #FFFFFF;          /* background color for boxes/cards/pop-ups */
+  --surface-muted: #F5F5EF;    /* a slightly duller white, used sparingly */
+  --ink: #23291F;              /* the main text color (a dark forest-green-black) */
+  --ink-muted: #5B6355;        /* a lighter gray-green for less important text */
+  --border: #DBDCCF;           /* the color of thin dividing lines/borders */
+  --accent: #3B5D42;           /* our main brand/action color (used on buttons) */
+  --accent-soft: #E4EAE1;      /* a pale version of the accent color */
+  --serif: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  /* ^ The fancier, book-like font used for the app title and company names. */
+  --sans: -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* ^ The plain, clean font used for everything else (buttons, labels, etc). */
 }
 
+* { box-sizing: border-box; }
+/* ^ A standard reset so that when we set a width/height on something,
+     padding and borders don't sneakily make it bigger than expected. */
+
 body {
-    margin: 0;
-    font-family: Arial, sans-serif;
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
 }
+/* ^ Removes the browser's default page margin, and applies our
+     background color, text color, and font to the whole app. */
+
+.app { min-height: 100vh; }
+/* ^ Makes sure our app always fills at least the full height of the
+     window, even if there isn't much content yet. */
+
+/* ---------- Toolbar (the bar of controls at the top) ---------- */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+}
+/* ^ Lines up all the toolbar's pieces (title, search box, dropdowns,
+     buttons) in a row, wrapping to a new line if the window gets too
+     narrow, with a thin line underneath separating it from the content below. */
+
+.toolbar__title { margin-right: auto; }
+/* ^ Pushes everything else in the toolbar to the right, since this pushes
+     as far left as it can. */
+.toolbar__title h1 { font-family: var(--serif); font-size: 24px; margin: 0; }
+.toolbar__title p { font-size: 13px; color: var(--ink-muted); margin: 4px 0 0; }
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 7px 10px;
+  background: var(--surface);
+}
+.search-box input { border: none; outline: none; font-size: 13px; width: 190px; background: transparent; }
+.search-box svg { color: var(--ink-muted); flex-shrink: 0; }
+/* ^ The search icon plus text box, styled to look like one connected pill
+     rather than two separate elements. */
+
+.select-input {
+  font-size: 13px;
+  padding: 7px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+}
+/* ^ Shared styling for every dropdown menu (status filter, remote filter,
+     sort dropdown), so they all look consistent. */
+
+/* ---------- Status row (small line just under the toolbar) ---------- */
+.status-row { display: flex; justify-content: space-between; padding: 12px 24px 0; }
+.muted-text { font-size: 12px; color: var(--ink-muted); margin: 0; }
+.export-status { color: var(--accent); }
+/* ^ The little "X leads shown" / export-confirmation text, in a quieter
+     gray-green, with export messages shown in our accent green instead. */
+
+/* ---------- Buttons ---------- */
+.primary-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+/* ^ The "main action" button style — solid green background, white text.
+     Used for things like Export CSV and Save. */
+.primary-button:disabled { opacity: 0.6; cursor: default; }
+/* ^ Makes a primary button look faded and non-clickable while disabled
+     (e.g. while a save is in progress). */
+.primary-button--full { width: 100%; padding: 10px; }
+/* ^ An optional variant that stretches the button to fill its container's
+     full width — used for the big "Generate outreach message" button. */
+
+.secondary-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 7px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+/* ^ A quieter, outlined button style for less important actions, like
+     "Edit notes," "Regenerate," or "Close." */
+
+.icon-button {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 7px;
+  color: var(--ink-muted);
+  display: flex;
+  align-items: center;
+}
+/* ^ A small square button that holds just an icon (no text), like the
+     sort-direction flip button or the "X" close button on pop-ups. */
+
+/* ---------- Grid of lead boxes ---------- */
+.lead-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  /* ^ This is what actually creates the "3 columns" layout: it says
+       "make 3 equal-width columns" ("1fr" means "one equal share of the
+       available space"). */
+  gap: 16px;
+  padding: 16px 24px 32px;
+}
+@media (max-width: 1000px) {
+  .lead-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .lead-grid { grid-template-columns: 1fr; }
+}
+/* ^ These two blocks make the grid responsive: if the window gets
+     narrower than 1000px wide, drop to 2 columns; narrower than 640px,
+     drop to just 1 column — so boxes don't get squished on small screens. */
+
+/* ---------- Individual lead box ---------- */
+.lead-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+/* ^ The overall card look: white box, thin border, rounded corners,
+     everything inside stacked top-to-bottom with small gaps between pieces. */
+
+.lead-box__header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+/* ^ Puts the company/job-title on the left and the status badge on the
+     right, at the top of the box. */
+.lead-box__company {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 15px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.lead-box__title { font-size: 13px; color: var(--ink-muted); margin: 3px 0 0; }
+.lead-box__meta { display: flex; gap: 10px; font-size: 12px; color: var(--ink-muted); align-items: center; }
+.lead-box__meta span { display: flex; align-items: center; gap: 4px; }
+.lead-box__remote { color: var(--accent); font-weight: 500; }
+/* ^ Makes the "Remote" badge stand out in the accent green rather than
+     the usual muted gray. */
+.lead-box__link {
+  font-size: 12px;
+  color: var(--accent);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+}
+.lead-box__link:hover { text-decoration: underline; }
+/* ^ Only shows the underline when the mouse is actually hovering over the
+     "View posting" link, like a normal web link. */
+.lead-box__footer { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+.lead-box__footer .secondary-button { flex: 1; justify-content: center; }
+/* ^ Makes the two buttons at the bottom of each box (Edit notes / Generate
+     outreach) share the available width equally. */
+
+/* ---------- Status badge (the little colored pill) ---------- */
+.stage-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  /* ^ Stops the badge's text from ever wrapping onto two lines. */
+}
+
+.empty-state { text-align: center; padding: 60px 24px; color: var(--ink-muted); font-size: 13px; }
+/* ^ Styling for the "no leads match" / "loading" messages. */
+
+/* ---------- Pop-up windows (modals) ---------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  /* ^ "inset: 0" is shorthand for "stretch to cover the top, right,
+       bottom, and left edges of the screen" — i.e. cover everything. */
+  background: rgba(35,41,31,0.45);
+  /* ^ A see-through dark overlay that dims the rest of the app behind
+       the pop-up, drawing attention to it. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 50;
+  /* ^ Makes sure this overlay sits ON TOP of everything else on screen. */
+}
+.modal { width: 100%; max-width: 420px; background: var(--surface); border: 1px solid var(--border); border-radius: 3px; box-shadow: 0 12px 32px rgba(0,0,0,0.18); }
+/* ^ The actual white pop-up box, centered on screen with a soft shadow
+     underneath it to make it look like it's floating above the page. */
+.modal--wide { max-width: 520px; }
+/* ^ A slightly wider variant, used for the outreach-message pop-up since
+     it needs more room for a paragraph of text. */
+.modal__header { display: flex; justify-content: space-between; align-items: flex-start; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.modal__title { font-family: var(--serif); font-size: 18px; margin: 0; }
+.modal__subtitle { font-size: 13px; color: var(--ink-muted); margin: 2px 0 0; }
+.modal__body { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; max-height: 60vh; overflow-y: auto; }
+/* ^ If the pop-up's content is too tall for the screen, this makes just
+     the middle section scroll instead of the whole pop-up running off
+     the bottom of the window. */
+.modal__footer { display: flex; gap: 8px; padding: 16px 20px; border-top: 1px solid var(--border); }
+
+.textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px;
+  font-size: 13px;
+  resize: none;
+  /* ^ Stops the user from manually dragging the textbox to resize it. */
+  outline: none;
+  font-family: var(--sans);
+}
+.button-row { display: flex; gap: 8px; }
+.button-row__push-right { margin-left: auto; }
+/* ^ Pushes one specific button all the way to the right of its row,
+     while the others stay on the left. */
+.loading-row { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--ink-muted); padding: 24px 0; font-size: 13px; }
+.error-text { color: #A6432D; font-size: 13px; margin: 0; }
+/* ^ Error messages are shown in a muted brick-red so they're clearly
+     distinguishable from normal text. */
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+/* ^ This is what actually makes the loading icon spin: it defines an
+     animation ("spin") that rotates the icon a full 360 degrees over and
+     over, once per second, forever ("infinite"). */

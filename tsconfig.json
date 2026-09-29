@@ -1,28 +1,70 @@
 {
+    // This file configures TypeScript for the "renderer" side of the app —
+    // that's everything the user actually sees and clicks on (the src/
+    // folder). TypeScript is like JavaScript with a spell-checker for
+    // logic mistakes: it flags things like "you're treating a number like
+    // it's text" before you even run the app.
     "compilerOptions": {
         "target": "ES2022",
+        // ^ Which "version" of JavaScript features we're allowed to use.
+        //   ES2022 is a fairly modern, well-supported version.
         "useDefineForClassFields": true,
+        // ^ A technical switch affecting how class properties behave.
+        //   Leave this as-is; it matches how modern JavaScript classes work.
         "lib": [
             "ES2022",
             "DOM",
             "DOM.Iterable"
         ],
+        // ^ Tells TypeScript which built-in features exist to check against —
+        //   modern JavaScript features (ES2022) plus browser features like
+        //   "document" and "window" (DOM).
         "allowJs": false,
+        // ^ We only write TypeScript (.ts/.tsx) files here, not plain
+        //   JavaScript (.js) files, so this is turned off.
         "skipLibCheck": true,
+        // ^ Skips double-checking the type definitions inside other
+        //   packages (like React) to make type-checking faster.
         "esModuleInterop": true,
+        // ^ Smooths out differences between two ways JavaScript files can
+        //   import each other, so imports "just work" more often.
         "allowSyntheticDefaultImports": true,
+        // ^ Lets us write `import React from "react"` even in cases where
+        //   that's not 100% technically how the package exports itself.
         "strict": true,
+        // ^ The big one: turns on TypeScript's strictest mistake-catching
+        //   rules. This is what makes it flag things like "this value might
+        //   be missing" before you find out the hard way while running it.
         "forceConsistentCasingInFileNames": true,
+        // ^ Prevents bugs where a file is imported with the wrong
+        //   capitalization (e.g. "App" vs "app") — this can work on one
+        //   computer and break on another, so TypeScript blocks it outright.
         "module": "ESNext",
+        // ^ Which style of "import / export" syntax we're writing in —
+        //   the modern standard one.
         "moduleResolution": "Bundler",
+        // ^ Tells TypeScript to figure out imports the same way our bundler
+        //   (Vite) does, so what TypeScript approves matches what actually
+        //   runs.
         "resolveJsonModule": true,
+        // ^ Lets us directly import .json files as if they were code.
         "isolatedModules": true,
+        // ^ A safety rule that makes sure every file can be compiled on
+        //   its own — required for the fast bundler (Vite) we're using.
         "noEmit": true,
+        // ^ TypeScript's only job here is to check for mistakes — it does
+        //   NOT produce any output files itself. Vite handles turning the
+        //   code into something the browser can run.
         "jsx": "react-jsx"
+        // ^ Tells TypeScript we're writing React's HTML-like syntax (JSX)
+        //   inside our .tsx files, and how to understand it.
     },
     "include": [
         "src",
         "electron",
         "modules"
     ]
+    // ^ Which folders TypeScript should actually check. (Even though this
+    //   config is mainly "for" the src/ folder, it also type-checks
+    //   electron/ and modules/ so mistakes there get caught too.)
 }
