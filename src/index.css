@@ -1,8 +1,275 @@
-* {
-    box-sizing: border-box;
+/* ============================================================================
+   WHAT IS THIS FILE?
+   This is the stylesheet — it controls colors, spacing, fonts, and layout
+   for the whole app. None of the actual text or buttons are created here;
+   this file only decides how things that already exist (from the .tsx
+   files) should LOOK.
+   ============================================================================ */
+
+:root {
+  /* ":root" means "these apply to the whole page." Everything below is a
+     reusable named color/value (called a "CSS variable") so we only have
+     to update a color in ONE place if we ever want to change our theme. */
+  --bg: #EDEEE6;              /* the app's overall background color (soft parchment) */
+  --surface: #FFFFFF;          /* background color for boxes/cards */
+  --surface-muted: #F5F5EF;    /* a slightly duller white, used sparingly */
+  --ink: #23291F;              /* the main text color (a dark forest-green-black) */
+  --ink-muted: #5B6355;        /* a lighter gray-green for less important text */
+  --border: #DBDCCF;           /* the color of thin dividing lines/borders */
+  --accent: #3B5D42;           /* our main brand/action color (used on buttons) */
+  --accent-soft: #E4EAE1;      /* a pale version of the accent color */
+  --serif: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  /* ^ The fancier, book-like font used for headings and post previews. */
+  --sans: -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* ^ The plain, clean font used for everything else (buttons, labels, etc). */
 }
 
+* { box-sizing: border-box; }
+/* ^ A standard reset so that when we set a width/height on something,
+     padding and borders don't sneakily make it bigger than expected. */
+
 body {
-    margin: 0;
-    font-family: Arial, sans-serif;
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
 }
+
+.app { min-height: 100vh; }
+.page { display: flex; flex-direction: column; }
+.page__body { padding: 16px 24px 32px; }
+
+/* ---------- Shared building blocks (buttons, inputs, small text styles) ---------- */
+.primary-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.primary-button:disabled { opacity: 0.6; cursor: default; }
+.primary-button--full { width: 100%; padding: 10px; }
+
+.secondary-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 7px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.secondary-button--active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+.icon-button {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 7px;
+  color: var(--ink-muted);
+  display: flex;
+  align-items: center;
+}
+.icon-button--tiny { padding: 2px; }
+
+.text-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 13px;
+  outline: none;
+  font-family: var(--sans);
+}
+.textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px;
+  font-size: 13px;
+  resize: none;
+  outline: none;
+  font-family: var(--sans);
+}
+.field-label { font-size: 12px; font-weight: 600; color: var(--ink-muted); margin: 12px 0 4px; display: block; }
+
+.button-row { display: flex; gap: 8px; }
+.button-row__push-right { margin-left: auto; }
+
+.muted-text { font-size: 12px; color: var(--ink-muted); margin: 0; }
+.error-text { color: #A6432D; font-size: 13px; margin: 0; }
+.empty-state { text-align: center; padding: 40px 24px; color: var(--ink-muted); font-size: 13px; }
+.loading-row { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--ink-muted); padding: 24px 0; font-size: 13px; }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.stage-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ---------- Module A's internal sub-navigation (Dashboard/Calendar/etc) ---------- */
+.subnav {
+  display: flex;
+  gap: 4px;
+  padding: 16px 24px 0;
+}
+.subnav__button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+.subnav__button--active { background: var(--surface); color: var(--ink); border-color: var(--border); font-weight: 500; }
+
+/* ---------- Dashboard ---------- */
+.dashboard { display: flex; flex-direction: column; gap: 16px; }
+.dashboard__stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 14px;
+}
+.stat-card__value { font-family: var(--serif); font-size: 20px; margin: 0; }
+.dashboard__columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px; }
+.dashboard__column h3 { font-family: var(--serif); font-size: 15px; margin: 0 0 8px; }
+.post-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.post-row__content { font-size: 13px; margin: 0 0 2px; }
+
+/* ---------- Calendar ---------- */
+.calendar { display: flex; flex-direction: column; gap: 8px; }
+.calendar__header { display: flex; align-items: center; justify-content: center; gap: 16px; }
+.calendar__header h3 { font-family: var(--serif); font-size: 16px; margin: 0; min-width: 180px; text-align: center; }
+.calendar__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  font-size: 11px;
+  color: var(--ink-muted);
+  text-align: center;
+  padding: 4px 0;
+}
+.calendar__grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.calendar__cell {
+  min-height: 90px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.calendar__cell--empty { background: transparent; border: none; }
+.calendar__cell-header { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--ink-muted); }
+.calendar__chip {
+  font-size: 10px;
+  text-align: left;
+  border: none;
+  border-radius: 3px;
+  padding: 3px 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.calendar__chip--draft { background: #E6E4DC; color: #5B5647; }
+.calendar__chip--scheduled { background: #E6ECF5; color: #3D5D8A; }
+.calendar__chip--published { background: #E3EEDF; color: #2F6B2A; }
+.calendar__chip--failed { background: #F3E2DC; color: #A6432D; }
+
+/* ---------- Create Post ---------- */
+.create-post { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
+@media (max-width: 900px) { .create-post { grid-template-columns: 1fr; } }
+.create-post__actions { margin-top: 12px; }
+.create-post__preview { position: sticky; top: 16px; }
+
+/* ---------- LinkedIn Connect card ---------- */
+.connect-card {
+  max-width: 420px;
+  margin: 40px auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+.connect-card__title { font-family: var(--serif); font-size: 17px; margin: 4px 0 0; }
+.connect-card__subtitle { max-width: 320px; }
+.connect-card__account { display: flex; align-items: center; gap: 12px; text-align: left; width: 100%; }
+.connect-card__name { font-family: var(--serif); font-weight: 600; margin: 0; }
+
+/* ---------- LinkedIn-style post preview ---------- */
+.li-preview {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 14px;
+  font-family: var(--sans);
+}
+.li-preview__header { display: flex; gap: 10px; }
+.li-preview__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.li-preview__avatar--lg { width: 56px; height: 56px; font-size: 20px; }
+.li-preview__avatar img { width: 100%; height: 100%; object-fit: cover; }
+.li-preview__name { font-weight: 600; font-size: 13px; margin: 0; }
+.li-preview__headline { font-size: 12px; color: var(--ink-muted); margin: 1px 0; }
+.li-preview__meta { font-size: 11px; color: var(--ink-muted); display: flex; align-items: center; gap: 3px; margin: 0; }
+.li-preview__content { font-size: 13px; white-space: pre-wrap; margin: 10px 0; }
+.li-preview__image { margin: 0 -14px 10px; }
+.li-preview__image img { width: 100%; display: block; }
+.li-preview__actions { display: flex; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 8px; }
+.li-preview__actions span { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--ink-muted); }

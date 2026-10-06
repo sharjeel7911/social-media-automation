@@ -1,14 +1,28 @@
-```gitignore
+# This file tells Git which files/folders to IGNORE — meaning Git will
+# never track them, never let you commit them, and they won't get pushed
+# to GitHub. This keeps huge, junky, or secret files out of the repo.
+
 # Dependencies
 node_modules/
+# ^ This folder holds every third-party code package the project uses
+#   (React, Electron, etc). It can be huge (hundreds of MB) and is
+#   regenerated automatically by running "npm install" — so there's no
+#   reason to store it in Git. Every teammate creates their own copy.
 
 # Build output
 dist/
+# ^ The finished, bundled website code (created by "npm run build").
+#   Like node_modules, it's regenerated from source code, so no need to
+#   save it in Git.
+dist-electron/
+# ^ Same idea, but for the Electron (desktop app) part of the code.
 build/
 out/
+# ^ Other common names build tools use for their output folders.
 
 # Electron packaged apps
 release/
+# ^ Where the finished installer (like Signal Desk Setup.exe) ends up.
 *.exe
 *.msi
 *.dmg
@@ -16,14 +30,20 @@ release/
 *.deb
 *.rpm
 *.AppImage
+# ^ These are installer/app file types for Windows, Mac, and Linux.
+#   They're big binary files — never belong in Git.
 
 # Vite
 .vite/
+# ^ A temporary cache folder Vite (our dev server/bundler) creates.
 
 # Environment variables
 .env
 .env.local
 .env.*.local
+# ^ VERY IMPORTANT: .env is where secret keys (like the AI API key) live.
+#   This line makes sure you can NEVER accidentally push your secrets to
+#   GitHub for the world to see.
 
 # Logs
 logs/
@@ -32,11 +52,15 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+# ^ Text files that record errors/output when something goes wrong while
+#   installing packages. Just clutter, not code.
 
 # OS files
 .DS_Store
 Thumbs.db
 desktop.ini
+# ^ Invisible files that Mac and Windows create automatically in every
+#   folder you open. Not part of the project at all.
 
 # IDE / Editors
 .vscode/*
@@ -45,16 +69,22 @@ desktop.ini
 .idea/
 *.swp
 *.swo
+# ^ Personal editor settings (VS Code, JetBrains, Vim). Everyone's editor
+#   setup is different, so these stay out of the shared project.
 
 # Temporary files
 *.tmp
 *.temp
 .cache/
 .temp/
+# ^ Scratch files tools create while working, safe to delete anytime.
 
 # Coverage
 coverage/
+# ^ Reports from automated tests showing how much of the code was tested.
+#   We don't have tests yet, but this is here for when we do.
 
 # TypeScript
 *.tsbuildinfo
-```
+# ^ A small file TypeScript uses to remember what it already checked, so
+#   it doesn't have to recheck everything every time. Just a cache.
