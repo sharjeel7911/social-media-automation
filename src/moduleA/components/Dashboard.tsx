@@ -7,8 +7,8 @@
 // ============================================================================
 
 import { useEffect } from "react";
-import { Plus, Calendar as CalendarIcon, CheckCircle2 } from "lucide-react";
-import { usePostsStore, upcomingScheduled, recentlyPublished } from "../../store/usePostsStore";
+import { Plus, Calendar as CalendarIcon, CheckCircle2, FileEdit } from "lucide-react";
+import { usePostsStore, upcomingScheduled, recentlyPublished, draftPosts } from "../../store/usePostsStore";
 import { PostStatusBadge } from "./PostStatusBadge";
 import { LinkedInMark } from "./LinkedInMark";
 import type { Post } from "../../../modules/posts/types/post";
@@ -29,7 +29,9 @@ export function Dashboard({ onCreatePost, onOpenPost, onGoToConnect }: Dashboard
 
   const upcoming = upcomingScheduled(posts);
   const published = recentlyPublished(posts);
-  const draftCount = posts.filter((p) => p.status === "Draft").length;
+  const drafts = draftPosts(posts);
+  // ^ Drafts have no scheduled date, so they can never appear on the
+  //   Calendar — this list is the ONLY place to find and reopen them.
 
   return (
     <div className="dashboard">
@@ -56,8 +58,11 @@ export function Dashboard({ onCreatePost, onOpenPost, onGoToConnect }: Dashboard
           </div>
         </div>
         <div className="stat-card">
-          <p className="stat-card__value">{draftCount}</p>
-          <p className="muted-text">Drafts</p>
+          <FileEdit size={18} color="#5B5647" />
+          <div>
+            <p className="stat-card__value">{drafts.length}</p>
+            <p className="muted-text">Drafts</p>
+          </div>
         </div>
       </div>
 
@@ -66,6 +71,21 @@ export function Dashboard({ onCreatePost, onOpenPost, onGoToConnect }: Dashboard
       </button>
 
       <div className="dashboard__columns">
+        <div className="dashboard__column">
+          <h3>Drafts</h3>
+          {loading && <p className="muted-text">Loading…</p>}
+          {!loading && drafts.length === 0 && <p className="empty-state">No drafts saved.</p>}
+          {drafts.slice(0, 5).map((post) => (
+            <button key={post.id} className="post-row" onClick={() => onOpenPost(post)}>
+              <div>
+                <p className="post-row__content">{post.content.slice(0, 80) || "(empty draft)"}</p>
+                <p className="muted-text">Last edited {new Date(post.updated_at).toLocaleString()}</p>
+              </div>
+              <PostStatusBadge status={post.status} />
+            </button>
+          ))}
+        </div>
+
         <div className="dashboard__column">
           <h3>Coming up</h3>
           {loading && <p className="muted-text">Loading…</p>}

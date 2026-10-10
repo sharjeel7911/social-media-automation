@@ -157,7 +157,8 @@ body {
   padding: 14px;
 }
 .stat-card__value { font-family: var(--serif); font-size: 20px; margin: 0; }
-.dashboard__columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px; }
+.dashboard__columns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 8px; }
+@media (max-width: 900px) { .dashboard__columns { grid-template-columns: 1fr; } }
 .dashboard__column h3 { font-family: var(--serif); font-size: 15px; margin: 0 0 8px; }
 .post-row {
   display: flex;

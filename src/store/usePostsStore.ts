@@ -110,3 +110,12 @@ export function recentlyPublished(posts: Post[]): Post[] {
     .filter((p) => p.status === "Published")
     .sort((a, b) => new Date(b.published_at ?? 0).getTime() - new Date(a.published_at ?? 0).getTime());
 }
+
+export function draftPosts(posts: Post[]): Post[] {
+  // Drafts have no scheduled_at or published_at to sort by (they're not
+  // tied to any date yet), so newest-created is the most sensible order —
+  // whatever you were most recently working on shows up first.
+  return posts
+    .filter((p) => p.status === "Draft")
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+}
