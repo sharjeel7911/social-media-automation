@@ -1,8 +1,207 @@
-* {
-    box-sizing: border-box;
+/* ============================================================================
+   WHAT IS THIS FILE?
+   This is the stylesheet — it controls colors, spacing, fonts, and layout
+   for the whole app. None of the actual text or buttons are created here;
+   this file only decides how things that already exist (from the .tsx
+   files) should LOOK.
+   ============================================================================ */
+
+:root {
+  --bg: #EDEEE6;
+  --surface: #FFFFFF;
+  --surface-muted: #F5F5EF;
+  --ink: #23291F;
+  --ink-muted: #5B6355;
+  --border: #DBDCCF;
+  --accent: #3B5D42;
+  --accent-soft: #E4EAE1;
+  --serif: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  --sans: -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
+* { box-sizing: border-box; }
+
 body {
-    margin: 0;
-    font-family: Arial, sans-serif;
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
 }
+
+.app { min-height: 100vh; }
+.page { display: flex; flex-direction: column; }
+.page__body { padding: 16px 24px 32px; }
+
+/* ---------- Shared building blocks (buttons, small text styles) ---------- */
+.primary-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.primary-button:disabled { opacity: 0.6; cursor: default; }
+
+.secondary-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 7px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.secondary-button:disabled { opacity: 0.6; cursor: default; }
+.secondary-button--active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+.button-row { display: flex; gap: 8px; align-items: center; }
+
+.muted-text { font-size: 12px; color: var(--ink-muted); margin: 0; }
+.empty-state { text-align: center; padding: 24px; color: var(--ink-muted); font-size: 13px; }
+.loading-row { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--ink-muted); padding: 24px 0; font-size: 13px; }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.export-status { color: var(--accent); margin: 10px 0; }
+
+.stage-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ---------- Sub-navigation tab bar ---------- */
+.subnav { display: flex; gap: 4px; padding: 16px 24px 0; flex-wrap: wrap; }
+.subnav__button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+.subnav__button--active { background: var(--surface); color: var(--ink); border-color: var(--border); font-weight: 500; }
+
+/* ---------- Home dashboard ---------- */
+.dashboard { display: flex; flex-direction: column; gap: 16px; }
+.dashboard__stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 14px;
+  text-align: left;
+}
+.stat-card--clickable { cursor: pointer; font-family: inherit; }
+.stat-card__value { font-family: var(--serif); font-size: 20px; margin: 0; }
+.dashboard__columns--three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 8px; }
+@media (max-width: 900px) {
+  .dashboard__columns--three { grid-template-columns: 1fr; }
+  .dashboard__stats { grid-template-columns: 1fr 1fr; }
+}
+.dashboard__column h3 { display: flex; align-items: center; gap: 6px; font-family: var(--serif); font-size: 15px; margin: 0 0 8px; }
+.post-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.post-row--static { cursor: default; }
+.post-row__content { font-size: 13px; margin: 0 0 2px; }
+.seo-rings { display: flex; gap: 20px; margin-bottom: 10px; }
+
+/* ---------- Score ring ---------- */
+.score-ring { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.score-ring__label { text-align: center; }
+
+/* ---------- Analytics ---------- */
+.analytics__note { margin-bottom: 14px; }
+.analytics__charts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 1000px) { .analytics__charts { grid-template-columns: 1fr; } }
+.analytics__heading { font-family: var(--serif); font-size: 15px; margin: 24px 0 8px; }
+.chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 12px; }
+.chart-card__header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.chart-card__title { font-family: var(--serif); font-size: 14px; margin: 0; }
+.chart-card__svg { display: block; }
+.chart-card__axis { display: flex; justify-content: space-between; margin-top: 2px; }
+
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--surface); border: 1px solid var(--border); }
+.data-table th { text-align: left; padding: 8px 12px; color: var(--ink-muted); font-weight: 500; border-bottom: 1px solid var(--border); font-size: 12px; }
+.data-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+
+/* ---------- Lead pipeline (Kanban) ---------- */
+.pipeline { display: flex; gap: 12px; overflow-x: auto; align-items: flex-start; }
+.pipeline__column {
+  flex: 1;
+  min-width: 190px;
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px;
+  min-height: 300px;
+}
+.pipeline__column--hover { background: var(--accent-soft); border-color: var(--accent); }
+.pipeline__column-header { display: flex; justify-content: space-between; font-family: var(--serif); font-size: 14px; margin-bottom: 10px; }
+.pipeline__empty { font-size: 12px; font-style: italic; color: var(--ink-muted); text-align: center; padding: 14px 0; margin: 0; }
+.pipeline__card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 9px 10px;
+  margin-bottom: 8px;
+  cursor: grab;
+}
+.pipeline__card:active { cursor: grabbing; }
+.pipeline__card-company { font-family: var(--serif); font-weight: 600; font-size: 13px; margin: 0 0 2px; }
+
+/* ---------- Reports ---------- */
+.reports__export { margin-left: auto; }
+.report-card { max-width: 520px; margin-top: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 18px; }
+.report-card h3 { font-family: var(--serif); font-size: 17px; margin: 0 0 2px; }
+.report-card__table { margin-top: 12px; border: none; }
+.report-card__value { text-align: right; font-weight: 600; }
+
+/* ---------- Integrations ---------- */
+.integrations__note { margin-bottom: 14px; max-width: 560px; }
+.integrations__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 900px) { .integrations__grid { grid-template-columns: 1fr; } }
+.connect-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+.connect-card__title { font-family: var(--serif); font-size: 16px; margin: 2px 0 0; }

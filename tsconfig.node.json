@@ -1,12 +1,57 @@
 {
+    // This is a SEPARATE TypeScript configuration, specifically for the
+    // "backend" half of the app that runs behind the scenes — the
+    // electron/ folder (the desktop-app engine) and modules/ folder (our
+    // database and business logic). This code never appears on screen;
+    // it runs quietly in the background handling data and files.
+    //
+    // We need two separate configs (this one, and tsconfig.json) because
+    // the renderer (what you see) and this backend code run in two
+    // different environments with different rules — a bit like how a
+    // recipe for the kitchen is different from a recipe for the dining room,
+    // even in the same restaurant.
     "compilerOptions": {
-        "composite": true,
+        "target": "ES2022",
+        // ^ Same as before: which JavaScript feature-set we're allowed to use.
+        "module": "NodeNext",
+        // ^ Which import/export style we're writing in. This is set to
+        //   "NodeNext" specifically (not "ESNext") because this backend
+        //   code is run directly by real Node.js (inside Electron) — not
+        //   passed through a bundler like Vite first. Node's real module
+        //   system has a strict rule: every relative import MUST end in
+        //   ".js" (e.g. "./database.js"), even though the actual source
+        //   file is named "database.ts". "NodeNext" makes TypeScript
+        //   enforce that same rule while we're writing the code, so a
+        //   missing ".js" gets caught immediately as a red squiggly line
+        //   instead of only showing up later as a confusing
+        //   "ERR_MODULE_NOT_FOUND" crash when you actually try to run the app.
+        "moduleResolution": "NodeNext",
+        // ^ Paired with "module": "NodeNext" above — tells TypeScript to
+        //   look up imported files the exact same way real Node.js does.
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        // ^ Same smoothing-over of import styles as in tsconfig.json.
+        "resolveJsonModule": true,
+        // ^ Lets this backend code import .json files directly too.
         "skipLibCheck": true,
-        "module": "ESNext",
-        "moduleResolution": "Bundler",
-        "allowSyntheticDefaultImports": true
+        // ^ Skip double-checking other packages' type definitions, for speed.
+        "strict": true,
+        // ^ Same strict mistake-catching as the renderer config.
+        "outDir": "dist-electron",
+        // ^ Where the finished, ready-to-run backend code gets written to
+        //   once this is compiled. (This is the folder Electron actually
+        //   loads and runs when you start the app.)
+        "rootDir": "."
+        // ^ Tells TypeScript "the project's top folder is right here" so it
+        //   recreates the same folder structure (electron/, modules/)
+        //   inside dist-electron/ instead of flattening everything together.
     },
     "include": [
-        "vite.config.ts"
+        "electron/main.ts",
+        "electron/ipc/**/*.ts",
+        "modules/**/*.ts"
     ]
+    // ^ Everything in electron/ EXCEPT preload.ts (which has its own
+    //   separate build — see tsconfig.preload.json and the note at the
+    //   top of electron/preload.ts for why).
 }
