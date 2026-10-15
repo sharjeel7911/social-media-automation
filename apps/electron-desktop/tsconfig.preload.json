@@ -1,0 +1,40 @@
+{
+    // WHY DOES THIS FILE EXIST SEPARATELY FROM tsconfig.node.json?
+    // Electron loads preload scripts (electron/preload.ts) through a
+    // special restricted "sandbox" that can only run OLD-STYLE JavaScript
+    // (using "require()"), not the modern "import" syntax used everywhere
+    // else in this project. If preload.ts gets compiled the same way as
+    // main.ts, Electron shows an error like:
+    //   "SyntaxError: Cannot use import statement outside a module"
+    // and the on-screen app ends up with no working connection to the
+    // background code at all — usually showing up as errors like
+    // "Cannot read properties of undefined (reading 'getLeads')".
+    //
+    // This config exists purely to compile that ONE file, preload.ts, in
+    // the old-style format Electron's sandbox actually understands.
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "CommonJS",
+        // ^ The key difference from tsconfig.node.json: old-style
+        //   "require()" output instead of modern "import" output.
+        "moduleResolution": "Node10",
+        // ^ The matching classic lookup style that goes with CommonJS output.
+        "ignoreDeprecations": "5.0",
+        // ^ TypeScript has renamed this option and warns about it, but it
+        //   still works exactly the same — this line just silences that
+        //   warning so it doesn't look like a real problem.
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "outDir": "dist-electron",
+        "rootDir": "."
+        // ^ Same folder-structure trick as tsconfig.node.json, so this
+        //   still lands at dist-electron/electron/preload.js — right next
+        //   to main.js, exactly where main.ts expects to find it.
+    },
+    "include": [
+        "electron/preload.ts"
+    ]
+    // ^ ONLY this one file. Nothing else in the project gets compiled by
+    //   this config.
+}

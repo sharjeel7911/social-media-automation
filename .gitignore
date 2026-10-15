@@ -1,60 +1,49 @@
-```gitignore
 # Dependencies
 node_modules/
+.pnp
+.pnp.js
 
-# Build output
+# Build and distribution outputs
 dist/
-build/
-out/
-
-# Electron packaged apps
+dist-electron/
+dist-ssr/
 release/
-*.exe
-*.msi
-*.dmg
-*.app
-*.deb
-*.rpm
-*.AppImage
+coverage/
+*.tsbuildinfo
 
-# Vite
-.vite/
+# SQLite databases & Local data
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+data/
 
-# Environment variables
+# Environment files
 .env
 .env.local
 .env.*.local
+!.env.example
 
 # Logs
-logs/
+logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
+lerna-debug.log*
+.pnpm-debug.log*
 
-# OS files
+# Editor & OS files
 .DS_Store
-Thumbs.db
-desktop.ini
-
-# IDE / Editors
+.idea/
 .vscode/*
 !.vscode/extensions.json
-!.vscode/settings.json
-.idea/
-*.swp
-*.swo
-
-# Temporary files
-*.tmp
-*.temp
-.cache/
-.temp/
-
-# Coverage
-coverage/
-
-# TypeScript
-*.tsbuildinfo
-```
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
