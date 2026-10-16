@@ -1,5 +1,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import fs from 'node:fs';
+import path from 'node:path';
 import Database from 'better-sqlite3';
 import type { LeadRow } from './lead-row.type';
 import type { LeadsRepository } from './leads-repository.interface';
@@ -12,6 +14,10 @@ export class SqliteLeadsRepository implements LeadsRepository, OnModuleInit {
 
   onModuleInit() {
     const dbPath = this.configService.get<string>('SQLITE_DB_PATH') ?? './data/leads.db';
+    const dbDir = path.dirname(dbPath);
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+    }
     this.db = new Database(dbPath);
     this.db.pragma('journal_mode = WAL');
 

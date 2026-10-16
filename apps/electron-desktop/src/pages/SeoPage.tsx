@@ -7,15 +7,16 @@
 // ============================================================================
 
 import { useState } from "react";
-import { LayoutDashboard, Search, TrendingUp, FileSearch, Users, MapPin } from "lucide-react";
+import { LayoutDashboard, Search, TrendingUp, FileSearch, Users, MapPin, BarChart3 } from "lucide-react";
 import { Dashboard } from "../moduleB/components/Dashboard";
 import { KeywordResearch } from "../moduleB/components/KeywordResearch";
 import { RankTracker } from "../moduleB/components/RankTracker";
 import { SiteAudit } from "../moduleB/components/SiteAudit";
 import { CompetitorGap } from "../moduleB/components/CompetitorGap";
 import { GoogleBusinessProfile } from "../moduleB/components/GoogleBusinessProfile";
+import { WeeklyReport } from "../moduleB/components/WeeklyReport";
 
-type Tab = "dashboard" | "keywords" | "rank" | "audit" | "competitor" | "gbp";
+type Tab = "dashboard" | "keywords" | "rank" | "audit" | "competitor" | "gbp" | "weekly";
 
 const TABS: Array<{ key: Tab; label: string; icon: typeof LayoutDashboard }> = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -24,6 +25,7 @@ const TABS: Array<{ key: Tab; label: string; icon: typeof LayoutDashboard }> = [
   { key: "audit", label: "Site Audit", icon: FileSearch },
   { key: "competitor", label: "Competitor Gap", icon: Users },
   { key: "gbp", label: "Google Business Profile", icon: MapPin },
+  { key: "weekly", label: "Weekly Report", icon: BarChart3 },
 ];
 
 export function SeoPage() {
@@ -50,6 +52,7 @@ export function SeoPage() {
         {tab === "audit" && <SiteAudit />}
         {tab === "competitor" && <CompetitorGap />}
         {tab === "gbp" && <GoogleBusinessProfile />}
+        {tab === "weekly" && <WeeklyReport />}
       </div>
     </div>
   );

@@ -12,17 +12,27 @@ import { contextBridge, ipcRenderer } from "electron";
 
 // ---- Module A Types ----
 type PostStatus = "Draft" | "Scheduled" | "Published" | "Failed";
+type PostPlatform = "linkedin" | "facebook" | "instagram" | "twitter" | "tiktok" | "youtube" | "pinterest" | "gbp";
 
 interface Post {
   id: number;
   content: string;
   image_url: string | null;
-  platform: "linkedin";
+  platform: PostPlatform;
   status: PostStatus;
   scheduled_at: string | null;
   published_at: string | null;
   linkedin_post_id: string | null;
   error_message: string | null;
+  original_url: string | null;
+  short_url: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  is_evergreen: boolean;
+  recycle_interval_days: number | null;
+  next_recycle_at: string | null;
+  recycle_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -62,25 +72,22 @@ interface TrackedKeyword {
   updated_at: string;
 }
 
-type CheckStatus = "pass" | "warning" | "fail";
+type CheckStatus = 'pass' | 'warn' | 'fail';
 
 interface AuditCheck {
-  id: string;
-  name: string;
-  category: "onpage" | "technical";
+  label: string;
   status: CheckStatus;
-  message: string;
-  recommendation?: string;
+  detail: string;
 }
 
 interface SiteAudit {
   id: number;
   url: string;
-  overall_score: number;
-  onpage_score: number;
-  technical_score: number;
-  checks: AuditCheck[];
   created_at: string;
+  onpage_score: number;
+  onpage_checks: AuditCheck[];
+  technical_checks: AuditCheck[];
+  page_speed_score: number;
 }
 
 interface KeywordGap {
@@ -88,17 +95,14 @@ interface KeywordGap {
   competitor_rank: number;
   your_rank: number | null;
   search_volume: number;
-  opportunity: "high" | "medium" | "low";
 }
 
 interface CompetitorGapResult {
   id: number;
   your_url: string;
   competitor_url: string;
-  shared_keywords_count: number;
-  gap_keywords_count: number;
+  created_at: string;
   gaps: KeywordGap[];
-  analyzed_at: string;
 }
 
 interface GbpPost {
@@ -227,13 +231,23 @@ export interface ElectronAPI {
     image_url: string | null;
     scheduled_at: string | null;
     status: PostStatus;
+    platform?: PostPlatform;
+    original_url?: string | null;
+    utm_source?: string | null;
+    utm_medium?: string | null;
+    utm_campaign?: string | null;
+    is_evergreen?: boolean;
+    recycle_interval_days?: number | null;
   }) => Promise<{ ok: boolean; post: Post }>;
   updatePost: (
     id: number,
-    input: Partial<Pick<Post, "content" | "image_url" | "scheduled_at" | "status">>
+    input: Partial<Pick<Post, "content" | "image_url" | "scheduled_at" | "status" | "platform" | "is_evergreen" | "recycle_interval_days">>
   ) => Promise<{ ok: boolean; post?: Post; error?: string }>;
   deletePost: (id: number) => Promise<{ ok: boolean }>;
   publishPostNow: (id: number) => Promise<{ ok: boolean; post?: Post; error?: string }>;
+  bulkCreatePosts: (
+    items: Array<{ content: string; scheduled_at?: string | null; platform?: PostPlatform; utm_campaign?: string | null }>
+  ) => Promise<{ ok: boolean; count?: number; error?: string }>;
   getLinkedInAccount: () => Promise<{ ok: boolean; account: LinkedInAccount | null }>;
   connectLinkedIn: () => Promise<{ ok: boolean; account?: LinkedInAccount }>;
   disconnectLinkedIn: () => Promise<{ ok: boolean }>;
@@ -249,6 +263,31 @@ export interface ElectronAPI {
   getCompetitorGaps: () => Promise<CompetitorGapResult[]>;
   getGbpSnapshot: () => Promise<{ ok: boolean; snapshot: GbpSnapshot | null }>;
   refreshGbpSnapshot: () => Promise<{ ok: boolean; snapshot: GbpSnapshot | null }>;
+  getSeoWeeklyReport: () => Promise<{
+    period: { from: string; to: string };
+    summary: {
+      trackedKeywords: number;
+      rankChecks: number;
+      averageRank: number | null;
+      auditsCompleted: number;
+      averageAuditScore: number | null;
+      technicalChecksCompleted: number;
+      averageTechnicalScore: number | null;
+    };
+    keywords: Array<{
+      id: number;
+      term: string;
+      targetUrl: string | null;
+      searchVolume: number;
+      difficulty: number;
+      currentRank: number | null;
+      isTracked: boolean;
+      createdAt: string;
+    }>;
+    rankHistory: Array<{ id: number; keywordId: number; rank: number | null; checkedAt: string }>;
+    audits: Array<{ id: number; url: string; targetKeyword: string | null; score: number; createdAt: string }>;
+    technicalChecks: Array<{ id: number; url: string; score: number; createdAt: string }>;
+  }>;
 
   // ---- Module C (Leads Engine) ----
   getLeads: () => Promise<Lead[]>;
@@ -270,6 +309,9 @@ export interface ElectronAPI {
   exportReport: (
     report: Report
   ) => Promise<{ ok: boolean; canceled?: boolean; filePath?: string; error?: string }>;
+  exportReportPdf: (
+    report: Report
+  ) => Promise<{ ok: boolean; canceled?: boolean; filePath?: string; error?: string }>;
 }
 
 const api: ElectronAPI = {
@@ -281,6 +323,7 @@ const api: ElectronAPI = {
   updatePost: (id, input) => ipcRenderer.invoke("posts:update", id, input),
   deletePost: (id) => ipcRenderer.invoke("posts:delete", id),
   publishPostNow: (id) => ipcRenderer.invoke("posts:publishNow", id),
+  bulkCreatePosts: (items) => ipcRenderer.invoke("posts:bulkCreate", items),
   getLinkedInAccount: () => ipcRenderer.invoke("linkedin:getAccount"),
   connectLinkedIn: () => ipcRenderer.invoke("linkedin:connect"),
   disconnectLinkedIn: () => ipcRenderer.invoke("linkedin:disconnect"),
@@ -296,6 +339,7 @@ const api: ElectronAPI = {
   getCompetitorGaps: () => ipcRenderer.invoke("seo:getCompetitorGaps"),
   getGbpSnapshot: () => ipcRenderer.invoke("seo:getGbpSnapshot"),
   refreshGbpSnapshot: () => ipcRenderer.invoke("seo:refreshGbpSnapshot"),
+  getSeoWeeklyReport: () => ipcRenderer.invoke("seo:getWeeklyReport"),
 
   // Module C
   getLeads: () => ipcRenderer.invoke("leads:getAll"),
@@ -313,6 +357,7 @@ const api: ElectronAPI = {
   getPipelineLeads: () => ipcRenderer.invoke("dashboard:getPipelineLeads"),
   getReport: (period) => ipcRenderer.invoke("dashboard:getReport", period),
   exportReport: (report) => ipcRenderer.invoke("dashboard:exportReport", report),
+  exportReportPdf: (report) => ipcRenderer.invoke("dashboard:exportReportPdf", report),
 };
 
 contextBridge.exposeInMainWorld("electronAPI", api);

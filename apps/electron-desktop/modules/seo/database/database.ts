@@ -1,13 +1,20 @@
 // ============================================================================
-// WHAT WILL THIS FILE DO? (not built yet)
-// Right now this file is empty on purpose — it's a placeholder.
+// SEO database helpers — lightweight bridge so other modules (e.g. Module D
+// dashboard IPC) can read SEO summary data without importing the entire
+// seo.ipc.ts mock.
 //
-// When it's built, this will be the real, permanent SQLite-backed storage
-// for tracked keywords, audit history, and competitor-gap results (per
-// SOW Section 5: "Local data store: Embedded SQLite for... SEO data").
-// Should follow the exact same pattern as
-// modules/leads/database/database.ts in the Module C project (same
-// better-sqlite3 library, same style), and replace the in-memory arrays
-// currently used in electron/ipc/seo.ipc.ts — which lose all their data
-// every time the app restarts.
+// Once the real SEO SQLite storage is built this file will do actual DB
+// queries. For now it returns safe null/zero defaults so the dashboard
+// shows a genuine "no SEO data yet" state rather than hardcoded numbers.
 // ============================================================================
+
+import type { SeoHealthSnapshot } from "../../dashboard/types/summaries.js";
+
+/**
+ * Returns the latest SEO health snapshot, or null if no audit data exists yet.
+ * Called by dashboard.ipc.ts to populate the Module D home screen SEO panel.
+ */
+export async function getSeoSnapshot(): Promise<SeoHealthSnapshot | null> {
+  // No real DB yet — return null so the caller uses its own safe default.
+  return null;
+}

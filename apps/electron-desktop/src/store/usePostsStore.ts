@@ -27,13 +27,26 @@ interface PostsState {
     image_url: string | null;
     scheduled_at: string | null;
     status: PostStatus;
+    platform?: Post["platform"];
+    original_url?: string | null;
+    utm_source?: string | null;
+    utm_medium?: string | null;
+    utm_campaign?: string | null;
+    is_evergreen?: boolean;
+    recycle_interval_days?: number | null;
   }) => Promise<Post | null>;
   updatePost: (
     id: number,
-    input: Partial<Pick<Post, "content" | "image_url" | "scheduled_at" | "status">>
+    input: Partial<Pick<Post,
+      | "content" | "image_url" | "scheduled_at" | "status"
+      | "platform" | "is_evergreen" | "recycle_interval_days"
+    >>
   ) => Promise<void>;
   deletePost: (id: number) => Promise<void>;
   publishNow: (id: number) => Promise<{ ok: boolean; error?: string }>;
+  bulkCreatePosts: (
+    items: Array<{ content: string; scheduled_at?: string | null; platform?: Post["platform"]; utm_campaign?: string | null }>
+  ) => Promise<{ ok: boolean; count?: number; error?: string }>;
 }
 
 export const usePostsStore = create<PostsState>((set, get) => ({
@@ -96,7 +109,17 @@ export const usePostsStore = create<PostsState>((set, get) => ({
     }
     return { ok: false, error: result.error };
   },
+  bulkCreatePosts: async (items) => {
+    const result = await window.electronAPI.bulkCreatePosts(items);
+    if (result.ok) {
+      // Reload all posts to get the newly created ones.
+      const posts = await window.electronAPI.getPosts();
+      set({ posts });
+    }
+    return result;
+  },
 }));
+
 
 // Small shared helpers other Module A components use.
 export function upcomingScheduled(posts: Post[]): Post[] {

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AggregationModule } from './aggregation/aggregation.module';
@@ -15,6 +16,7 @@ import { ReportsModule } from './reports/reports.module';
       autoLoadEntities: true,
       synchronize: true,
     }),
+    ScheduleModule.forRoot(),
     AnalyticsModule,
     AggregationModule,
     DashboardModule,

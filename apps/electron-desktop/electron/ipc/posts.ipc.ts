@@ -1,105 +1,33 @@
 // ============================================================================
-// ⚠️ TEMPORARY MOCK — Person 2 will replace this file.
-//
-// This is a stand-in for the real posts database and scheduling backend
-// (modules/posts/database/database.ts and modules/posts/services/scheduler.ts,
-// currently empty placeholders). It stores posts in a plain JavaScript
-// array in memory instead of a real database, so:
-//   - Every function below matches the name/shape Person 2's real
-//     database functions should have, so swapping this file for the real
-//     thing requires ZERO changes to the frontend.
-//   - Data does NOT persist — closing the app resets everything back to
-//     the sample posts seeded below.
-//   - "Publishing" a post here just flips its status and makes up a fake
-//     LinkedIn post ID — it does not actually talk to LinkedIn. That real
-//     work belongs in modules/linkedin/api/publish.ts (Person 3).
+// IPC handler for Social Media Posts (Module A).
+// Backed by: modules/posts/database/database.ts (SQLite)
+//            modules/linkedin/api/publish.ts (LinkedIn Publishing API)
+//            modules/posts/services/scheduler.ts (Background timer)
 // ============================================================================
 
 import { ipcMain } from "electron";
-import type { Post, PostStatus } from "../../modules/posts/types/post.js";
-
-let posts: Post[] = [];
-let nextId = 1;
-
-function addSamplePost(data: Omit<Post, "id" | "created_at" | "updated_at">): void {
-  const now = new Date().toISOString();
-  posts.push({ ...data, id: nextId++, created_at: now, updated_at: now });
-}
-
-function seedSamplePosts(): void {
-  // A handful of realistic-looking posts across every status, so the
-  // Dashboard and Calendar have something to show immediately.
-  const today = new Date();
-  const inDays = (n: number) => {
-    const d = new Date(today);
-    d.setDate(d.getDate() + n);
-    return d.toISOString();
-  };
-
-  addSamplePost({
-    content: "Excited to share that our AI receptionist just crossed 10,000 calls handled this month! 📞 Thank you to every customer who trusted us with their front desk.",
-    image_url: null,
-    platform: "linkedin",
-    status: "Published",
-    scheduled_at: null,
-    published_at: inDays(-3),
-    linkedin_post_id: "urn:li:share:mock1",
-    error_message: null,
-  });
-  addSamplePost({
-    content: "Hiring a receptionist? Before you post that job listing, see what an AI front desk can do for your business — 24/7 coverage, zero sick days.",
-    image_url: null,
-    platform: "linkedin",
-    status: "Scheduled",
-    scheduled_at: inDays(1),
-    published_at: null,
-    linkedin_post_id: null,
-    error_message: null,
-  });
-  addSamplePost({
-    content: "Case study: how a 12-location dental group cut missed calls by 90% in their first month with our AI receptionist.",
-    image_url: null,
-    platform: "linkedin",
-    status: "Scheduled",
-    scheduled_at: inDays(3),
-    published_at: null,
-    linkedin_post_id: null,
-    error_message: null,
-  });
-  addSamplePost({
-    content: "Draft: thoughts on why small businesses are switching to AI-first customer service in 2026...",
-    image_url: null,
-    platform: "linkedin",
-    status: "Draft",
-    scheduled_at: null,
-    published_at: null,
-    linkedin_post_id: null,
-    error_message: null,
-  });
-  addSamplePost({
-    content: "We're at [conference name] this week — come say hi at booth 42!",
-    image_url: null,
-    platform: "linkedin",
-    status: "Failed",
-    scheduled_at: inDays(-1),
-    published_at: null,
-    linkedin_post_id: null,
-    error_message: "LinkedIn account was disconnected before this post could go out.",
-  });
-}
-
-seedSamplePosts();
+import type { PostStatus, PostPlatform } from "../../modules/posts/types/post.js";
+import {
+  getAllPosts,
+  getPostById,
+  createPost,
+  updatePost,
+  deletePost,
+} from "../../modules/posts/database/database.js";
+import { publishToLinkedIn } from "../../modules/linkedin/api/publish.js";
 
 export function registerPostsIpc(): void {
+  // ---- Get all ----
   ipcMain.handle("posts:getAll", () => {
-    // Newest-scheduled-or-created first, so the list feels current.
-    return [...posts].sort((a, b) => {
-      const at = a.scheduled_at ?? a.created_at;
-      const bt = b.scheduled_at ?? b.created_at;
-      return new Date(bt).getTime() - new Date(at).getTime();
-    });
+    try {
+      return getAllPosts();
+    } catch (err: any) {
+      console.error("Error in posts:getAll:", err);
+      return [];
+    }
   });
 
+  // ---- Create single ----
   ipcMain.handle(
     "posts:create",
     (
@@ -109,62 +37,144 @@ export function registerPostsIpc(): void {
         image_url: string | null;
         scheduled_at: string | null;
         status: PostStatus;
+        platform?: PostPlatform;
+        original_url?: string | null;
+        short_url?: string | null;
+        utm_source?: string | null;
+        utm_medium?: string | null;
+        utm_campaign?: string | null;
+        is_evergreen?: boolean;
+        recycle_interval_days?: number | null;
       }
     ) => {
-      const now = new Date().toISOString();
-      const post: Post = {
-        id: nextId++,
-        content: input.content,
-        image_url: input.image_url,
-        platform: "linkedin",
-        status: input.status,
-        scheduled_at: input.scheduled_at,
-        published_at: null,
-        linkedin_post_id: null,
-        error_message: null,
-        created_at: now,
-        updated_at: now,
-      };
-      posts.push(post);
-      return { ok: true, post };
+      try {
+        const post = createPost(input);
+        return { ok: true, post };
+      } catch (err: any) {
+        console.error("Error in posts:create:", err);
+        return { ok: false, error: err.message };
+      }
     }
   );
 
+  // ---- Bulk create (CSV import) ----
+  ipcMain.handle(
+    "posts:bulkCreate",
+    (
+      _event,
+      items: Array<{
+        content: string;
+        image_url?: string | null;
+        scheduled_at?: string | null;
+        status?: PostStatus;
+        platform?: PostPlatform;
+        utm_source?: string | null;
+        utm_medium?: string | null;
+        utm_campaign?: string | null;
+      }>
+    ) => {
+      try {
+        if (!Array.isArray(items) || items.length === 0) {
+          return { ok: false, error: "No posts provided." };
+        }
+        if (items.length > 500) {
+          return { ok: false, error: "Maximum 500 posts per import." };
+        }
+        const posts = items.map((item) =>
+          createPost({
+            content:               item.content,
+            image_url:             item.image_url ?? null,
+            scheduled_at:          item.scheduled_at ?? null,
+            status:                item.status ?? "Draft",
+            platform:              item.platform ?? "linkedin",
+            utm_source:            item.utm_source ?? null,
+            utm_medium:            item.utm_medium ?? null,
+            utm_campaign:          item.utm_campaign ?? null,
+          })
+        );
+        return { ok: true, count: posts.length };
+      } catch (err: any) {
+        console.error("Error in posts:bulkCreate:", err);
+        return { ok: false, error: err.message };
+      }
+    }
+  );
+
+  // ---- Update ----
   ipcMain.handle(
     "posts:update",
     (
       _event,
       id: number,
-      input: Partial<Pick<Post, "content" | "image_url" | "scheduled_at" | "status">>
+      input: Partial<{
+        content: string;
+        image_url: string | null;
+        scheduled_at: string | null;
+        status: PostStatus;
+        platform: PostPlatform;
+        original_url: string | null;
+        short_url: string | null;
+        utm_source: string | null;
+        utm_medium: string | null;
+        utm_campaign: string | null;
+        is_evergreen: boolean;
+        recycle_interval_days: number | null;
+      }>
     ) => {
-      const post = posts.find((p) => p.id === id);
-      if (!post) return { ok: false, error: "Post not found." };
-      Object.assign(post, input, { updated_at: new Date().toISOString() });
-      return { ok: true, post };
+      try {
+        const post = updatePost(id, input);
+        if (!post) return { ok: false, error: "Post not found." };
+        return { ok: true, post };
+      } catch (err: any) {
+        console.error("Error in posts:update:", err);
+        return { ok: false, error: err.message };
+      }
     }
   );
 
+  // ---- Delete ----
   ipcMain.handle("posts:delete", (_event, id: number) => {
-    posts = posts.filter((p) => p.id !== id);
-    return { ok: true };
+    try {
+      deletePost(id);
+      return { ok: true };
+    } catch (err: any) {
+      console.error("Error in posts:delete:", err);
+      return { ok: false, error: err.message };
+    }
   });
 
+  // ---- Publish now (LinkedIn only for now) ----
   ipcMain.handle("posts:publishNow", async (_event, id: number) => {
-    // TEMPORARY: fakes a publish instead of really calling LinkedIn.
-    // Person 3's real modules/linkedin/api/publish.ts should be called
-    // from here once it exists.
-    const post = posts.find((p) => p.id === id);
-    if (!post) return { ok: false, error: "Post not found." };
+    try {
+      const post = getPostById(id);
+      if (!post) return { ok: false, error: "Post not found." };
 
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    // ^ A short fake delay, just so the "Publishing…" state in the UI is
-    //   actually visible instead of finishing instantly.
+      // Only LinkedIn publishing is wired up; other platforms fall through
+      // to their platform adapters once those OAuth integrations are built.
+      const result = await publishToLinkedIn({
+        content:   post.content,
+        image_url: post.image_url,
+      });
 
-    post.status = "Published";
-    post.published_at = new Date().toISOString();
-    post.linkedin_post_id = `urn:li:share:mock${post.id}`;
-    post.error_message = null;
-    post.updated_at = new Date().toISOString();
-    return { ok: true, post };
+      if (!result.ok) {
+        const failedPost = updatePost(id, {
+          status:        "Failed",
+          error_message: result.error || "LinkedIn publishing failed.",
+        });
+        return { ok: false, error: result.error, post: failedPost ?? post };
+      }
+
+      const publishedPost = updatePost(id, {
+        status:           "Published",
+        published_at:     new Date().toISOString(),
+        linkedin_post_id: result.external_id || null,
+        error_message:    null,
+      });
+
+      return { ok: true, post: publishedPost ?? post };
+    } catch (err: any) {
+      console.error("Error in posts:publishNow:", err);
+      return { ok: false, error: err.message || "Failed to publish post." };
+    }
   });
 }

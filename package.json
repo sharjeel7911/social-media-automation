@@ -13,7 +13,8 @@
     "start:backend:posts": "npm --workspace=backend/module-a-posts run start:dev",
     "start:backend:seo": "npm --workspace=backend/module-b-seo run start:dev",
     "start:backend:leads": "npm --workspace=backend/module-c-leads run start:dev",
-    "start:backend:analytics": "npm --workspace=backend/module-d-analytics run start:dev"
+    "start:backend:analytics": "npm --workspace=backend/module-d-analytics run start:dev",
+    "test": "npm --workspace=apps/electron-desktop run test && npm --workspace=backend/module-a-posts run test && npm --workspace=backend/module-b-seo run test && npm --workspace=backend/module-c-leads run test && npm --workspace=backend/module-d-analytics run test"
   },
   "keywords": [
     "electron",
@@ -23,5 +24,11 @@
     "marketing"
   ],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "allowScripts": {
+    "better-sqlite3@13.0.3": true,
+    "better-sqlite3@12.11.1": true,
+    "sqlite3": true,
+    "@parcel/watcher": true
+  }
 }

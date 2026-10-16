@@ -19,6 +19,7 @@ import Database from "better-sqlite3";
 //   database files.
 
 import path from "node:path";
+import fs from "node:fs";
 import { app } from "electron";
 // ^ Used to find a safe, standard folder on the user's computer to store
 //   our database file in.
@@ -60,12 +61,11 @@ export function initDatabase(): void {
   // Call this once, when the app starts, to open (or create, if it
   // doesn't exist yet) the database file and make sure our tables exist.
 
-  const dbPath = path.join(app.getPath("userData"), "signal-desk.db");
-  // ^ "userData" is a special folder Electron sets aside for each app to
-  //   store its own files — different on every operating system, but
-  //   Electron figures out the right spot automatically. Our database
-  //   file will be called "signal-desk.db" inside it.
-
+  const userDir = app.getPath("userData");
+  if (!fs.existsSync(userDir)) {
+    fs.mkdirSync(userDir, { recursive: true });
+  }
+  const dbPath = path.join(userDir, "signal-desk.db");
   db = new Database(dbPath);
   // ^ Opens the connection to that file (creating an empty one if it
   //   doesn't exist yet).

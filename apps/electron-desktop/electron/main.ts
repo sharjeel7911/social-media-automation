@@ -8,11 +8,15 @@
 
 import { app, BrowserWindow, dialog } from "electron";
 import path from "node:path";
+import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 
 import { initDatabase, seedIfEmpty } from "../modules/leads/database/database.js";
 import { seedLeads } from "../modules/leads/database/seedLeads.js";
+import { initLinkedInDatabase } from "../modules/linkedin/database/accountDatabase.js";
+import { initPostsDatabase, seedPostsIfEmpty } from "../modules/posts/database/database.js";
+import { startPostScheduler } from "../modules/posts/services/scheduler.js";
 
 // Module IPC registrations
 import { registerLeadsIpc } from "./ipc/leads.ipc.js";
@@ -43,10 +47,21 @@ function createWindow() {
     },
   });
 
+  const distPath = path.join(__dirname, "..", "..", "dist", "index.html");
   if (app.isPackaged) {
-    mainWindow.loadFile(path.join(__dirname, "..", "..", "dist", "index.html"));
+    mainWindow.loadFile(distPath);
   } else {
-    mainWindow.loadURL("http://localhost:5173");
+    const loadDev = (retries = 15) => {
+      if (!mainWindow || mainWindow.isDestroyed()) return;
+      mainWindow.loadURL("http://localhost:5173").catch(() => {
+        if (retries > 0) {
+          setTimeout(() => loadDev(retries - 1), 500);
+        } else if (fs.existsSync(distPath)) {
+          mainWindow?.loadFile(distPath);
+        }
+      });
+    };
+    loadDev();
     mainWindow.webContents.openDevTools({ mode: "detach" });
   }
 
@@ -63,6 +78,10 @@ app.whenReady().then(() => {
   try {
     initDatabase();
     seedIfEmpty(seedLeads);
+    initLinkedInDatabase();
+    initPostsDatabase();
+    seedPostsIfEmpty();
+    startPostScheduler();
 
     // Register all module IPC channels
     registerLeadsIpc();

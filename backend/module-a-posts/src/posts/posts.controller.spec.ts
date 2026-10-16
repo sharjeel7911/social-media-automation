@@ -1,12 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PostsController } from './posts.controller';
 
+import { PostsService } from './posts.service';
+
 describe('PostsController', () => {
   let controller: PostsController;
 
   beforeEach(async () => {
+    const mockPostsService = {
+      findAll: jest.fn().mockResolvedValue([]),
+      create: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PostsController],
+      providers: [
+        { provide: PostsService, useValue: mockPostsService },
+      ],
     }).compile();
 
     controller = module.get<PostsController>(PostsController);

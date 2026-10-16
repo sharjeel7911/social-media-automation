@@ -11,6 +11,7 @@
     "build:electron": "npm run build:electron:main && npm run build:electron:preload",
     "dev": "concurrently -k \"npm run dev:renderer\" \"npm run build:electron:main -- --watch\" \"npm run build:electron:preload -- --watch\" \"electron .\"",
     "build": "tsc && vite build && npm run build:electron",
+    "test": "node --test tests/*.test.mjs",
     "rebuild": "electron-rebuild -f -w better-sqlite3",
     "pack": "electron-builder --dir",
     "dist": "electron-builder"

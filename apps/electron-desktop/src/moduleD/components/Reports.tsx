@@ -13,12 +13,12 @@
 // ============================================================================
 
 import { useEffect, useState } from "react";
-import { Download, Loader2 } from "lucide-react";
+import { Download, FileText, Loader2 } from "lucide-react";
 import { useDashboardStore } from "../../store/useDashboardStore";
 import type { ReportPeriod } from "../../../modules/dashboard/types/report";
 
 export function Reports() {
-  const { report, loadingReport, loadReport, exportReport, exportStatus } = useDashboardStore();
+  const { report, loadingReport, loadReport, exportReport, exportReportPdf, exportStatus } = useDashboardStore();
   const [period, setPeriod] = useState<ReportPeriod>("weekly");
 
   useEffect(() => {
@@ -55,6 +55,9 @@ export function Reports() {
         </button>
         <button className="primary-button reports__export" onClick={exportReport} disabled={!report || loadingReport}>
           <Download size={14} /> Export CSV
+        </button>
+        <button className="secondary-button reports__export" onClick={exportReportPdf} disabled={!report || loadingReport}>
+          <FileText size={14} /> Export PDF
         </button>
       </div>
 

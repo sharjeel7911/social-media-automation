@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ReportsController } from './reports.controller';
 import { ReportsService } from './reports.service';
+import { ReportsSchedulerService } from './reports-scheduler.service';
 import { Analytics } from '../analytics/analytics.entity';
 import { PipelineLead } from '../pipeline/pipeline.entity';
 
@@ -13,6 +14,6 @@ import { PipelineLead } from '../pipeline/pipeline.entity';
     ]),
   ],
   controllers: [ReportsController],
-  providers: [ReportsService],
+  providers: [ReportsService, ReportsSchedulerService],
 })
 export class ReportsModule {}

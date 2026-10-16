@@ -1,51 +1,50 @@
 // ============================================================================
-// ⚠️ TEMPORARY MOCK — Person 3 will replace this file.
+// WHAT IS THIS FILE?
+// IPC handler for LinkedIn account connection, disconnection, and profile fetching.
 //
-// This is a stand-in for the real LinkedIn OAuth connection flow
-// (modules/linkedin/auth/oauth.ts, currently an empty placeholder). It
-// "connects" a made-up account after a short fake delay instead of
-// actually opening LinkedIn's real login page — so:
-//   - Every function below matches the name/shape Person 3's real OAuth
-//     functions should have, so swapping this file for the real thing
-//     requires ZERO changes to the frontend.
-//   - No real LinkedIn account, login page, or access token is involved
-//     anywhere in this file.
+// Backed by:
+//   - modules/linkedin/auth/oauth.ts (OAuth 2.0 flow & authentication)
+//   - modules/linkedin/database/accountDatabase.ts (SQLite persistence in signal-desk.db)
+//
+// State is persisted in SQLite across app restarts and safely exposes public
+// account info to the renderer process.
 // ============================================================================
 
 import { ipcMain } from "electron";
-import type { LinkedInAccount } from "../../modules/linkedin/types/account.js";
-
-let connectedAccount: LinkedInAccount | null = null;
-// ^ Starts disconnected. Nothing is remembered between app restarts,
-//   since this is only in-memory — the real version (Person 3's job) will
-//   store this in SQLite so the connection survives restarts.
+import {
+  authenticateLinkedIn,
+  disconnectLinkedIn,
+  getCurrentLinkedInAccount,
+} from "../../modules/linkedin/auth/oauth.js";
 
 export function registerLinkedInIpc(): void {
   ipcMain.handle("linkedin:getAccount", () => {
-    return { ok: true, account: connectedAccount };
+    try {
+      const account = getCurrentLinkedInAccount();
+      return { ok: true, account };
+    } catch (err: any) {
+      console.error("Error fetching LinkedIn account:", err);
+      return { ok: false, account: null, error: err.message };
+    }
   });
 
   ipcMain.handle("linkedin:connect", async () => {
-    // TEMPORARY: fakes a successful login instead of really opening
-    // LinkedIn's OAuth page. Person 3's real modules/linkedin/auth/oauth.ts
-    // should replace this entire function body.
-    await new Promise((resolve) => setTimeout(resolve, 900));
-    // ^ A short fake delay, so the "Connecting…" state in the UI is
-    //   actually visible instead of finishing instantly.
-
-    connectedAccount = {
-      id: 1,
-      linkedin_user_id: "mock-user-123",
-      name: "Jordan Ellis",
-      headline: "Growth Marketing (demo account)",
-      profile_picture_url: null,
-      connected_at: new Date().toISOString(),
-    };
-    return { ok: true, account: connectedAccount };
+    try {
+      const account = await authenticateLinkedIn();
+      return { ok: true, account };
+    } catch (err: any) {
+      console.error("LinkedIn OAuth connection failed:", err);
+      return { ok: false, error: err.message || "Failed to connect LinkedIn account." };
+    }
   });
 
-  ipcMain.handle("linkedin:disconnect", () => {
-    connectedAccount = null;
-    return { ok: true };
+  ipcMain.handle("linkedin:disconnect", async () => {
+    try {
+      await disconnectLinkedIn();
+      return { ok: true };
+    } catch (err: any) {
+      console.error("LinkedIn disconnect failed:", err);
+      return { ok: false, error: err.message };
+    }
   });
 }

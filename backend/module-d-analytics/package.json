@@ -1,5 +1,5 @@
 {
-  "name": "module d ayesha",
+  "name": "module-d-analytics",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -23,6 +23,7 @@
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/schedule": "^12.0.2",
     "@nestjs/typeorm": "^12.0.2",
     "better-sqlite3": "^12.11.1",
     "json2csv": "^6.0.0-alpha.2",

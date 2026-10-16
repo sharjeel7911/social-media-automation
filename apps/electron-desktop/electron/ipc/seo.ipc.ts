@@ -266,9 +266,105 @@ function registerGbpHandlers(): void {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Weekly SEO report (reads across all in-memory stores above)
+// ---------------------------------------------------------------------------
+function registerWeeklyReportHandlers(): void {
+  ipcMain.handle("seo:getWeeklyReport", () => {
+    const since = new Date();
+    since.setDate(since.getDate() - 7);
+    const sinceIso = since.toISOString();
+
+    // Pull from the same in-memory stores used by the other handlers above.
+    const weeklyAudits = audits.filter((a) => a.created_at >= sinceIso);
+    const weeklyGapResults = gapResults.filter((g) => g.created_at >= sinceIso);
+
+    // Build a flat list of "technical check" summaries from the audit.technical_checks arrays.
+    const technicalChecks = weeklyAudits.map((a, idx) => ({
+      id: idx + 1,
+      url: a.url,
+      score: a.page_speed_score, // page_speed_score doubles as the technical health proxy
+      createdAt: a.created_at,
+    }));
+
+    const validRanks = trackedKeywords
+      .map((k) => k.current_rank)
+      .filter((r): r is number => r !== null);
+    const averageRank =
+      validRanks.length > 0
+        ? Math.round(validRanks.reduce((s, r) => s + r, 0) / validRanks.length)
+        : null;
+
+    const averageAuditScore =
+      weeklyAudits.length > 0
+        ? Math.round(weeklyAudits.reduce((s, a) => s + a.onpage_score, 0) / weeklyAudits.length)
+        : null;
+
+    const averageTechnicalScore =
+      weeklyAudits.length > 0
+        ? Math.round(weeklyAudits.reduce((s, a) => s + a.page_speed_score, 0) / weeklyAudits.length)
+        : null;
+
+    // Build a synthetic rank-history array from tracked keywords' history entries
+    // that fall within the last 7 days.
+    const rankHistory = trackedKeywords.flatMap((kw) =>
+      kw.history
+        .filter((h) => h.date >= sinceIso)
+        .map((h, idx) => ({
+          id: kw.id * 1000 + idx,
+          keywordId: kw.id,
+          rank: h.rank,
+          checkedAt: h.date,
+        }))
+    );
+
+    // Shape the tracked keywords to match the backend's DB entity shape.
+    const keywords = trackedKeywords.map((kw) => ({
+      id: kw.id,
+      term: kw.keyword,
+      targetUrl: null as string | null,
+      searchVolume: kw.search_volume,
+      difficulty: kw.difficulty,
+      currentRank: kw.current_rank,
+      isTracked: true,
+      createdAt: kw.tracked_at,
+    }));
+
+    return {
+      period: {
+        from: sinceIso,
+        to: new Date().toISOString(),
+      },
+      summary: {
+        trackedKeywords: trackedKeywords.length,
+        rankChecks: rankHistory.length,
+        averageRank,
+        auditsCompleted: weeklyAudits.length,
+        averageAuditScore,
+        technicalChecksCompleted: technicalChecks.length,
+        averageTechnicalScore,
+      },
+      keywords,
+      rankHistory,
+      audits: weeklyAudits.map((a) => ({
+        id: a.id,
+        url: a.url,
+        targetKeyword: null,
+        score: a.onpage_score,
+        createdAt: a.created_at,
+      })),
+      technicalChecks,
+      // competitor gap summary info (bonus context)
+      competitorGapsThisWeek: weeklyGapResults.length,
+    };
+  });
+}
+
 export function registerSeoIpc(): void {
   registerKeywordHandlers();
   registerAuditHandlers();
   registerCompetitorHandlers();
   registerGbpHandlers();
+  registerWeeklyReportHandlers();
 }
+

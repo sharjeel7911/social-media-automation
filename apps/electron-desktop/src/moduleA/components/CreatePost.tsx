@@ -1,36 +1,40 @@
 // ============================================================================
 // WHAT IS THIS FILE?
-// The form for writing a post: the text content, an optional image, and a
-// choice between saving as a draft, scheduling for later, or publishing
-// right away — with a live preview alongside showing exactly what it'll
-// look like once it's live. Also doubles as the EDIT screen: opening an
-// existing post (from the Dashboard or Calendar) pre-fills this same form.
+// The form for writing a post: content, optional image, platform selector,
+// UTM tracking fields, and a choice between draft / scheduled / publish now
+// — with a live preview alongside. Also doubles as the EDIT screen when
+// an existing post is passed in as `existingPost`.
 // ============================================================================
 
 import { useEffect, useState } from "react";
-import { Loader2, Send, Calendar as CalendarIcon, Save, Trash2 } from "lucide-react";
+import {
+  Loader2, Send, Calendar as CalendarIcon, Save, Trash2,
+  Link2, RefreshCw, Globe,
+} from "lucide-react";
 import { usePostsStore } from "../../store/usePostsStore";
 import { PostPreview } from "./PostPreview";
 import type { Post } from "../../../modules/posts/types/post";
 
 const LINKEDIN_CHAR_LIMIT = 3000;
-// ^ LinkedIn's real limit on a single text post — shown as a live counter
-//   so you don't write something that gets rejected.
+
+const PLATFORMS: Array<{ value: Post["platform"]; label: string; charLimit: number }> = [
+  { value: "linkedin",  label: "LinkedIn",          charLimit: 3000  },
+  { value: "facebook",  label: "Facebook",           charLimit: 63206 },
+  { value: "instagram", label: "Instagram",          charLimit: 2200  },
+  { value: "twitter",   label: "X / Twitter",        charLimit: 280   },
+  { value: "tiktok",    label: "TikTok",             charLimit: 2200  },
+  { value: "youtube",   label: "YouTube",            charLimit: 5000  },
+  { value: "pinterest", label: "Pinterest",          charLimit: 500   },
+  { value: "gbp",       label: "Google Business",   charLimit: 1500  },
+];
 
 interface CreatePostProps {
   existingPost: Post | null;
-  // ^ If set, we're editing this post rather than starting a new one.
   prefillDate: Date | null;
-  // ^ If set (from clicking "+" on a Calendar day), the schedule date
-  //   field starts pre-filled with this date.
   onDone: () => void;
-  // ^ Called after saving/publishing/canceling, so the parent screen can
-  //   navigate away from this form.
 }
 
 function toDateTimeLocalValue(iso: string | null): string {
-  // Converts a stored ISO date string into the format the browser's
-  // datetime-local input field expects ("YYYY-MM-DDTHH:mm").
   if (!iso) return "";
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -40,78 +44,94 @@ function toDateTimeLocalValue(iso: string | null): string {
 export function CreatePost({ existingPost, prefillDate, onDone }: CreatePostProps) {
   const { account, createPost, updatePost, deletePost, publishNow } = usePostsStore();
 
-  const [content, setContent] = useState(existingPost?.content ?? "");
-  const [imageUrl, setImageUrl] = useState(existingPost?.image_url ?? "");
+  const [content, setContent]     = useState(existingPost?.content ?? "");
+  const [imageUrl, setImageUrl]   = useState(existingPost?.image_url ?? "");
+  const [platform, setPlatform]   = useState<Post["platform"]>(existingPost?.platform ?? "linkedin");
   const [scheduleMode, setScheduleMode] = useState<"draft" | "schedule" | "now">(
     existingPost?.status === "Scheduled" ? "schedule" : "draft"
   );
   const [scheduledAt, setScheduledAt] = useState(
-    toDateTimeLocalValue(existingPost?.scheduled_at ?? (prefillDate ? prefillDate.toISOString() : null))
+    toDateTimeLocalValue(
+      existingPost?.scheduled_at ?? (prefillDate ? prefillDate.toISOString() : null)
+    )
   );
-  const [saving, setSaving] = useState(false);
+
+  // UTM / link-shortening
+  const [showUtm, setShowUtm]         = useState(false);
+  const [originalUrl, setOriginalUrl] = useState("");
+  const [utmSource, setUtmSource]     = useState("linkedin");
+  const [utmMedium, setUtmMedium]     = useState("social");
+  const [utmCampaign, setUtmCampaign] = useState("");
+
+  // Evergreen
+  const [isEvergreen, setIsEvergreen]           = useState(existingPost?.is_evergreen ?? false);
+  const [recycleIntervalDays, setRecycleDays]   = useState<number>(existingPost?.recycle_interval_days ?? 30);
+
+  const [saving, setSaving]       = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError]         = useState("");
+
+  const currentPlatform = PLATFORMS.find((p) => p.value === platform) ?? PLATFORMS[0];
+  const overLimit = content.length > currentPlatform.charLimit;
 
   useEffect(() => {
-    // If a prefill date arrives after the form is already open (unlikely,
-    // but safe to handle), switch the mode to "schedule" automatically.
     if (prefillDate && !existingPost) setScheduleMode("schedule");
   }, [prefillDate, existingPost]);
 
-  const overLimit = content.length > LINKEDIN_CHAR_LIMIT;
+  // Pre-fill UTM source from platform name
+  useEffect(() => {
+    setUtmSource(platform);
+  }, [platform]);
 
   async function handleSave() {
-    if (!content.trim()) {
-      setError("Write something before saving.");
-      return;
-    }
-    if (scheduleMode === "schedule" && !scheduledAt) {
-      setError("Pick a date and time to schedule this for.");
-      return;
-    }
-    setError("");
-    setSaving(true);
+    if (!content.trim()) { setError("Write something before saving."); return; }
+    if (scheduleMode === "schedule" && !scheduledAt) { setError("Pick a date and time."); return; }
+    setError(""); setSaving(true);
 
-    const status = scheduleMode === "schedule" ? "Scheduled" : "Draft";
+    const status      = scheduleMode === "schedule" ? "Scheduled" : "Draft";
     const scheduled_at = scheduleMode === "schedule" ? new Date(scheduledAt).toISOString() : null;
 
+    const payload = {
+      content,
+      image_url: imageUrl || null,
+      scheduled_at,
+      status: status as Post["status"],
+      platform,
+      original_url: showUtm && originalUrl ? originalUrl : null,
+      utm_source:   showUtm ? utmSource   : null,
+      utm_medium:   showUtm ? utmMedium   : null,
+      utm_campaign: showUtm ? utmCampaign : null,
+      is_evergreen: isEvergreen,
+      recycle_interval_days: isEvergreen ? recycleIntervalDays : null,
+    };
+
     if (existingPost) {
-      await updatePost(existingPost.id, { content, image_url: imageUrl || null, scheduled_at, status });
+      await updatePost(existingPost.id, payload);
     } else {
-      await createPost({ content, image_url: imageUrl || null, scheduled_at, status });
+      await createPost(payload);
     }
     setSaving(false);
     onDone();
   }
 
   async function handlePublishNow() {
-    if (!content.trim()) {
-      setError("Write something before publishing.");
-      return;
-    }
-    setError("");
-    setPublishing(true);
+    if (!content.trim()) { setError("Write something before publishing."); return; }
+    setError(""); setPublishing(true);
 
-    // Make sure the content/image are saved first (creating the post if
-    // it's brand new), then trigger the actual publish step.
     let post = existingPost;
     if (!post) {
-      post = await createPost({ content, image_url: imageUrl || null, scheduled_at: null, status: "Draft" });
+      post = await createPost({
+        content, image_url: imageUrl || null, scheduled_at: null,
+        status: "Draft", platform,
+      });
     } else {
-      await updatePost(post.id, { content, image_url: imageUrl || null });
+      await updatePost(post.id, { content, image_url: imageUrl || null, platform });
     }
-    if (!post) {
-      setPublishing(false);
-      setError("Couldn't save the post before publishing.");
-      return;
-    }
+    if (!post) { setPublishing(false); setError("Couldn't save the post before publishing."); return; }
 
     const result = await publishNow(post.id);
     setPublishing(false);
-    if (!result.ok) {
-      setError(result.error || "Publishing failed.");
-      return;
-    }
+    if (!result.ok) { setError(result.error || "Publishing failed."); return; }
     onDone();
   }
 
@@ -124,18 +144,40 @@ export function CreatePost({ existingPost, prefillDate, onDone }: CreatePostProp
   return (
     <div className="create-post">
       <div className="create-post__form">
-        <label className="field-label">Post content</label>
+
+        {/* Platform selector */}
+        <label className="field-label">
+          <Globe size={13} style={{ display: "inline", marginRight: 4 }} />
+          Platform
+        </label>
+        <div className="button-row platform-picker" style={{ flexWrap: "wrap", gap: 6 }}>
+          {PLATFORMS.map((p) => (
+            <button
+              key={p.value}
+              type="button"
+              className={platform === p.value ? "secondary-button secondary-button--active" : "secondary-button"}
+              style={{ padding: "4px 10px", fontSize: 12 }}
+              onClick={() => setPlatform(p.value)}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Content */}
+        <label className="field-label" style={{ marginTop: 12 }}>Post content</label>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          rows={8}
+          rows={7}
           className="textarea"
-          placeholder="What do you want to share on LinkedIn?"
+          placeholder={`What do you want to share on ${currentPlatform.label}?`}
         />
         <p className={overLimit ? "error-text" : "muted-text"}>
-          {content.length} / {LINKEDIN_CHAR_LIMIT} characters
+          {content.length} / {currentPlatform.charLimit.toLocaleString()} characters
         </p>
 
+        {/* Image URL */}
         <label className="field-label">Image URL (optional)</label>
         <input
           value={imageUrl}
@@ -144,7 +186,87 @@ export function CreatePost({ existingPost, prefillDate, onDone }: CreatePostProp
           placeholder="https://…"
         />
 
-        <label className="field-label">When</label>
+        {/* UTM / Link shortening */}
+        <button
+          type="button"
+          className="secondary-button"
+          style={{ marginTop: 10, gap: 6, fontSize: 12 }}
+          onClick={() => setShowUtm((v) => !v)}
+        >
+          <Link2 size={13} /> {showUtm ? "Hide" : "Add"} UTM tracking
+        </button>
+
+        {showUtm && (
+          <div className="utm-panel" style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+            <input
+              className="text-input"
+              placeholder="URL to shorten + tag (e.g. https://yoursite.com/page)"
+              value={originalUrl}
+              onChange={(e) => setOriginalUrl(e.target.value)}
+            />
+            <div className="button-row" style={{ gap: 6 }}>
+              <input
+                className="text-input"
+                placeholder="utm_source"
+                value={utmSource}
+                onChange={(e) => setUtmSource(e.target.value)}
+                style={{ flex: 1 }}
+              />
+              <input
+                className="text-input"
+                placeholder="utm_medium"
+                value={utmMedium}
+                onChange={(e) => setUtmMedium(e.target.value)}
+                style={{ flex: 1 }}
+              />
+              <input
+                className="text-input"
+                placeholder="utm_campaign"
+                value={utmCampaign}
+                onChange={(e) => setUtmCampaign(e.target.value)}
+                style={{ flex: 1 }}
+              />
+            </div>
+            <p className="muted-text" style={{ fontSize: 11 }}>
+              A short link with these UTM parameters will be generated and embedded when the post is saved.
+            </p>
+          </div>
+        )}
+
+        {/* Evergreen toggle */}
+        <div className="button-row" style={{ marginTop: 12, gap: 8, alignItems: "center" }}>
+          <button
+            type="button"
+            className={isEvergreen ? "secondary-button secondary-button--active" : "secondary-button"}
+            style={{ gap: 6, fontSize: 12 }}
+            onClick={() => setIsEvergreen((v) => !v)}
+          >
+            <RefreshCw size={13} /> Evergreen / auto-recycle
+          </button>
+          {isEvergreen && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span className="muted-text" style={{ fontSize: 12 }}>every</span>
+              <input
+                type="number"
+                min={1}
+                max={365}
+                value={recycleIntervalDays}
+                onChange={(e) => setRecycleDays(Number(e.target.value))}
+                className="text-input"
+                style={{ width: 60, padding: "4px 8px" }}
+              />
+              <span className="muted-text" style={{ fontSize: 12 }}>days</span>
+            </div>
+          )}
+        </div>
+        {isEvergreen && (
+          <p className="muted-text" style={{ fontSize: 11, marginTop: 4 }}>
+            After publishing, this post will be automatically re-scheduled every {recycleIntervalDays} day(s).
+          </p>
+        )}
+
+        {/* Schedule mode */}
+        <label className="field-label" style={{ marginTop: 12 }}>When</label>
         <div className="button-row">
           <button
             className={scheduleMode === "draft" ? "secondary-button secondary-button--active" : "secondary-button"}
@@ -176,19 +298,27 @@ export function CreatePost({ existingPost, prefillDate, onDone }: CreatePostProp
               <Trash2 size={13} /> Delete
             </button>
           )}
-          <button className="secondary-button" onClick={onDone}>
-            Cancel
-          </button>
-          <button className="secondary-button button-row__push-right" onClick={handleSave} disabled={saving || overLimit}>
+          <button className="secondary-button" onClick={onDone}>Cancel</button>
+          <button
+            className="secondary-button button-row__push-right"
+            onClick={handleSave}
+            disabled={saving || overLimit}
+          >
             {saving ? <Loader2 size={14} className="spin" /> : <Save size={14} />}
             {scheduleMode === "schedule" ? "Save schedule" : "Save draft"}
           </button>
-          <button className="primary-button" onClick={handlePublishNow} disabled={publishing || overLimit || !account}>
+          <button
+            className="primary-button"
+            onClick={handlePublishNow}
+            disabled={publishing || overLimit || !account}
+          >
             {publishing ? <Loader2 size={14} className="spin" /> : <Send size={14} />}
             Publish now
           </button>
         </div>
-        {!account && <p className="muted-text">Connect a LinkedIn account to publish immediately.</p>}
+        {!account && (
+          <p className="muted-text">Connect a LinkedIn account to publish immediately.</p>
+        )}
       </div>
 
       <div className="create-post__preview">

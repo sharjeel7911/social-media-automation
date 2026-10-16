@@ -36,6 +36,7 @@ interface DashboardState {
   exportStatus: string;
   loadReport: (period: ReportPeriod) => Promise<void>;
   exportReport: () => Promise<void>;
+  exportReportPdf: () => Promise<void>;
 }
 
 export const useDashboardStore = create<DashboardState>((set, get) => ({
@@ -103,5 +104,17 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     }
     setTimeout(() => set({ exportStatus: "" }), 4000);
     // ^ Clears the confirmation message after 4 seconds.
+  },
+
+  exportReportPdf: async () => {
+    const { report } = get();
+    if (!report) return;
+    const result = await window.electronAPI.exportReportPdf(report);
+    if (result.ok) {
+      set({ exportStatus: `PDF saved to ${result.filePath}` });
+    } else if (!result.canceled) {
+      set({ exportStatus: result.error || "PDF export failed." });
+    }
+    setTimeout(() => set({ exportStatus: "" }), 4000);
   },
 }));

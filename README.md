@@ -72,20 +72,16 @@ npm run build
 npm run dist
 ```
 
-### 3. Backend Microservices
+### 3. Run from root
 
-Each backend service can be developed and run independently:
 
-```bash
-# Module A - Posts Service
-cd backend/module-a-posts && npm install && npm run start:dev
+- npm run dev:desktop
+- npm run start:backend:analytics
+- npm run start:backend:leads
+- npm run start:backend:seo
+- npm run start:backend:posts
 
-# Module B - SEO Service
-cd backend/module-b-seo && npm install && npm run start:dev
 
-# Module C - Lead Engine
-cd backend/module-c-leads && npm install && npm run start:dev
 
-# Module D - Analytics & Reports
-cd backend/module-d-analytics && npm install && npm run start:dev
-```
+---
+
